@@ -1,6 +1,15 @@
 const XLSX = require('xlsx');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const path = require('path');
+
+// 定义日志文件夹的路径
+const logFolderPath = path.join(__dirname, 'polymer_logs');
+
+// 确保日志文件夹存在
+if (!fs.existsSync(logFolderPath)){
+    fs.mkdirSync(logFolderPath, { recursive: true });
+}
 
 // 读取Excel文件并获取私钥和其他key信息
 function readExcel(filePath) {
@@ -36,7 +45,7 @@ function updateConfigFile(configPath, keys) {
         key = key.trim();
         // 如果当前行的键需要被更新，替换其值
         if (updates.hasOwnProperty(key)) {
-            return `${key} = '${updates[key]}'`;
+            return `${key}='${updates[key]}'`;
         }
         // 否则，保留原行不变
         return line;
@@ -50,7 +59,8 @@ function updateConfigFile(configPath, keys) {
 function executeCommand(command, args, privateKey) {
     const child = spawn(command, args);
     const timestamp = new Date().getTime();
-    const outputPath = `${privateKey}_${timestamp}.txt`;
+    // 构造输出文件路径
+    const outputPath = path.join(logFolderPath, `${privateKey}_${timestamp}.txt`);
     let output = '';
 
     child.stdout.on('data', (data) => {
@@ -72,10 +82,10 @@ function main(excelPath, configPath) {
     const data = readExcel(excelPath);
     data.forEach(row => {
         updateConfigFile(configPath, row);
-        executeCommand('just', ['do', 'it'], row.PrivateKey);
+        executeCommand('just', ['do-it'], row.PrivateKey);
     });
 }
 
 // 使用示例
-main("./OP_Wallets_With_APIs_1.xlsx", './.env.example');
+main("./OP_Wallets_With_APIs.xlsx", './.env');
 
